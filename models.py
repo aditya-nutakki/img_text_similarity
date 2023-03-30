@@ -18,17 +18,13 @@ class ImageModel(nn.Module):
     def forward(self, x):
         print(x.shape)
         x = self.conv(x)
-        print(x.shape)
         x = self.dropout(x)
-        print(x.shape)
         x = self.batchnorm1(x)
         print(x.shape)
-
         x = self.conv1(x)
         print(x.shape)
         x = self.dropout(x)
         x = self.batchnorm2(x)
-        print(x.shape)
         x = self.conv2(x)
         print(x.shape)
         print(f"x was here")
