@@ -1,6 +1,14 @@
-from models import ImageModel
-import torch
+from models import SimilarityNet
+from torch import LongTensor, rand, randn
 
-x = torch.randn((1, 3,256,256))
-img_model = ImageModel()
-img_model(x)
+dev = "cuda"
+# x = randn((1, 3, 312, 312)).to(dev)
+# y = rand((1, 440)).type(LongTensor).to(dev)
+
+x = randn((1, 3, 312, 312))
+y = rand((1, 440)).type(LongTensor)
+
+bcn = SimilarityNet()
+res = bcn(x,y)
+print(res)
+
