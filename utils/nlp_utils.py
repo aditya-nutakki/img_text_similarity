@@ -113,30 +113,31 @@ def text2int(raw_text):
     return pad(_numericalize(raw_text))
 
 def int2text(ids):
+    op_string = ""
     for i in range(len(ids)):
-        ids[i] = inverse_vocab[ids[i]] 
-    return ids
+        if ids[i] != 0:
+            # ids[i] = inverse_vocab[ids[i]]
+            # print(inverse_vocab[ids[i]])
+            op_string += inverse_vocab[ids[i]] + " "
+    return op_string
 
 
-labels_path = "/mnt/d/work/datasets/img_text/labels/"
-print("doing some nasty here")
-labels = os.listdir(labels_path)
-for l in range(len(labels)):
-    labels[l] = read_txt(os.path.join(labels_path, labels[l]))
-    labels[l] = preprocess_label(labels[l])
-    
-# print(labels)
+def create_vocab_inv_labels(labels_path):
+    # labels_path = "/mnt/d/work/datasets/img_text/labels/"
+    labels = os.listdir(labels_path)
+    for l in range(len(labels)):
+        labels[l] = read_txt(os.path.join(labels_path, labels[l]))
+        labels[l] = preprocess_label(labels[l])
+        
+    global vocab
+    global inverse_vocab
 
-vocab = make_vocab(labels)
-for l in range(len(labels)):
-    for t in range(len(labels[l])):
-        # print(tok_text)
-        labels[l][t] = _numericalize(labels[l][t])
+    vocab = make_vocab(labels)
+    for l in range(len(labels)):
+        for t in range(len(labels[l])):
+            # print(tok_text)
+            labels[l][t] = _numericalize(labels[l][t])
 
-# print(labels)
-# print(vocab)
-inverse_vocab = _inverse_vocab(vocab)
+    inverse_vocab = _inverse_vocab(vocab)
 
-
-ftime = time.time()
-print(ftime-stime)
+    return labels, vocab, inverse_vocab
