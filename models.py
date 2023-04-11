@@ -1,9 +1,10 @@
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
+from config import PADDING_LENGTH
 
 class ImageModel(nn.Module):
-    def __init__(self, input_shape = 312):
+    def __init__(self, input_shape = 256):
         super().__init__()
         self.input_shape = input_shape
         # assuming standard rgb image
@@ -44,7 +45,6 @@ class LanguageModel(nn.Module):
         self.flatten = nn.Flatten()
         self.conv = nn.Conv1d(self.vocab_size, 8, kernel_size=5, stride=2)
 
-
     def forward(self, x):
         # print(x.shape, self.vocab_size)
         x = self.embedding(x)
@@ -65,9 +65,9 @@ class SimilarityNet(nn.Module):
         self.linear2 = nn.Linear(64, 32)
         self.linear3 = nn.Linear(32, 1)
 
-        self.bilinear = nn.Bilinear(1936, 2032, 128)
+        self.bilinear = nn.Bilinear(1296, 2032, 128)
+        # is of the form (img, txt, output_)
 
-    
     def forward(self, img, txt):
         txt = self.language_model(txt)
         img = self.image_model(img)
