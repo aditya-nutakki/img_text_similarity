@@ -1,7 +1,7 @@
 import os
 import time
 # from ..config import PADDING_LENGTH, stop_words, chars
-from config import PADDING_LENGTH, stop_words, chars
+from config import padding_length, stop_words, chars
 stime = time.time()
 
 
@@ -85,7 +85,7 @@ def _inverse_vocab(vocab):
     return {v: k for k, v in vocab.items()}
 
 
-def pad(text, padding_length = PADDING_LENGTH):
+def pad(text, padding_length = padding_length):
     l = len(text)
     for i in range(l, padding_length):
         text.append(0)
@@ -101,14 +101,14 @@ def _numericalize(tokenized_text):
             word = "unk"
         transformed_text.append(vocab[word])
     
-    if len(transformed_text) < PADDING_LENGTH:
+    if len(transformed_text) < padding_length:
         transformed_text = pad(transformed_text)
     return transformed_text
 
 
 def text2int(raw_text):
     raw_text = preprocess_raw_text(raw_text)
-    # print(raw_text)
+    print(raw_text)
     # print(vocab)
     return pad(_numericalize(raw_text))
 
@@ -125,6 +125,8 @@ def int2text(ids):
 def create_vocab_inv_labels(labels_path):
     # labels_path = "/mnt/d/work/datasets/img_text/labels/"
     labels = os.listdir(labels_path)
+    label_names = os.listdir(labels_path)
+
     for l in range(len(labels)):
         labels[l] = read_txt(os.path.join(labels_path, labels[l]))
         labels[l] = preprocess_label(labels[l])
@@ -132,12 +134,17 @@ def create_vocab_inv_labels(labels_path):
     global vocab
     global inverse_vocab
 
+    assert len(label_names) == len(labels)
+
     vocab = make_vocab(labels)
+    inverse_vocab = _inverse_vocab(vocab)
+    
     for l in range(len(labels)):
         for t in range(len(labels[l])):
-            # print(tok_text)
             labels[l][t] = _numericalize(labels[l][t])
 
-    inverse_vocab = _inverse_vocab(vocab)
+    pairs = []
+    for l in range(len(labels)):
+        pairs.append([labels[l], os.path.join(labels_path, label_names[l])])
 
-    return labels, vocab, inverse_vocab
+    return pairs, vocab, inverse_vocab
