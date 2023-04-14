@@ -1,9 +1,9 @@
 import os
 import time
 # from ..config import PADDING_LENGTH, stop_words, chars
-from config import padding_length, stop_words, chars
+from config import padding_length, stop_words, chars, vocab_path
 stime = time.time()
-
+import json
 
 def read_txt(path):
     # returns list of sentences separated by \n
@@ -63,7 +63,7 @@ def preprocess_label(label_):
     return label_
 
 
-def make_vocab(labels, max_limit = 1000):
+def make_vocab(labels, max_limit = 1000, save_vocab = True):
     vocab = {}
     idx = 1 # starts from 1 because 0 will be used for padding
     for indi_label in labels:
@@ -77,6 +77,10 @@ def make_vocab(labels, max_limit = 1000):
                         return vocab
 
     vocab["unk"] = idx
+
+    if save_vocab:
+        with open(vocab_path, "w") as f:
+            json.dump(vocab, f)
 
     return vocab
 
@@ -108,9 +112,10 @@ def _numericalize(tokenized_text):
 
 def text2int(raw_text):
     raw_text = preprocess_raw_text(raw_text)
-    print(raw_text)
+    # print(raw_text)
     # print(vocab)
     return pad(_numericalize(raw_text))
+
 
 def int2text(ids):
     op_string = ""

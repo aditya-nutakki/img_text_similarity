@@ -39,16 +39,17 @@ class ImgTextDataset(Dataset):
         text, img_path = pair[0], pair[1]
         img_path = self.images_path + img_path.split("/")[-1].replace(".txt", ".jpg")
         img = cv2.imread(img_path)
-        print(img)
         img = self.transforms(img)
-        print(img)
-        print(img.shape)
         # returns text, image, label
-        return torch.Tensor(text).type(torch.LongTensor), img, 1
+        return img, torch.Tensor(text).type(torch.LongTensor), torch.Tensor([1])
     
 
 dataset = ImgTextDataset(img_text_pairs=img_text_pairs)
-train_dataloader = DataLoader(dataset)
+train_dataloader = DataLoader(dataset, batch_size=2, shuffle=True)
+
+# def train()
+# for i in train_dataloader:
+#     text, img, label = i
+    
 
 # print(dataset[1])
-

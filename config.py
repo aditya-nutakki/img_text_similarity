@@ -3,3 +3,5 @@ chars = "!@#$%^&*(),.;:'[]{}<?>"
 
 img_size = 256
 padding_length = 24
+model_path = "./models/dummy.pt"
+vocab_path = "./vocab.json"

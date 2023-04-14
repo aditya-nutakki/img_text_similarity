@@ -1,10 +1,10 @@
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
-from config import PADDING_LENGTH
+from config import padding_length, img_size
 
 class ImageModel(nn.Module):
-    def __init__(self, input_shape = 256):
+    def __init__(self, input_shape = img_size):
         super().__init__()
         self.input_shape = input_shape
         # assuming standard rgb image
@@ -33,7 +33,7 @@ class ImageModel(nn.Module):
         x = F.relu(self.conv3(x))
         # print(x.shape)
         x = self.flatten(x)
-        print(f"image op => {x.shape}")
+        # print(f"image op => {x.shape}")
         return x
 
 
@@ -41,9 +41,10 @@ class LanguageModel(nn.Module):
     def __init__(self, vocab_size) -> None:
         super().__init__()
         self.vocab_size = vocab_size
-        self.embedding = nn.Embedding(self.vocab_size, 512)
+        self.embedding = nn.Embedding(self.vocab_size, 296)
         self.flatten = nn.Flatten()
-        self.conv = nn.Conv1d(self.vocab_size, 8, kernel_size=5, stride=2)
+        # self.conv = nn.Conv1d(self.vocab_size, 8, kernel_size=5, stride=2)
+        self.conv = nn.Conv2d(1, 4, kernel_size=7, stride=4)
 
     def forward(self, x):
         # print(x.shape, self.vocab_size)
@@ -52,20 +53,21 @@ class LanguageModel(nn.Module):
         x = F.relu(self.conv(x))
         # print(x.shape)
         x = self.flatten(x)
-        print(f"nlp op => {x.shape}")
+        # print(f"nlp op => {x.shape}")
         return x
 
 
 class SimilarityNet(nn.Module):
     def __init__(self) -> None:
         super().__init__()
-        self.language_model = LanguageModel(vocab_size=440)
+        self.language_model = LanguageModel(vocab_size=142)
         self.image_model = ImageModel()
-        self.linear = nn.Linear(128, 64)
-        self.linear2 = nn.Linear(64, 32)
+        self.linear = nn.Linear(128, 96)
+        self.linear2 = nn.Linear(96, 32)
         self.linear3 = nn.Linear(32, 1)
 
-        self.bilinear = nn.Bilinear(1296, 2032, 128)
+        # self.bilinear = nn.Bilinear(1296, 2032, 128)
+        self.bilinear = nn.Bilinear(1296, 1460, 128)
         # is of the form (img, txt, output_)
 
     def forward(self, img, txt):
@@ -73,7 +75,7 @@ class SimilarityNet(nn.Module):
         img = self.image_model(img)
 
         cat = self.bilinear(img, txt)
-        print(cat.shape)
+        # print(cat.shape)
         # cat = torch.cat((img, txt), dim=1)
         cat = F.relu(self.linear(cat))
         cat = F.relu(self.linear2(cat))
