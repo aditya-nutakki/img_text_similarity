@@ -17,7 +17,7 @@ class ImageModel(nn.Module):
         self.batchnorm1 = nn.BatchNorm2d(64)
         self.batchnorm2 = nn.BatchNorm2d(128)
 
-        self.flatten = nn.Flatten()
+        self.flatten = nn.Flatten(start_dim=1)
     
     def forward(self, x):
         # print(x.shape)
@@ -32,8 +32,8 @@ class ImageModel(nn.Module):
         x = F.relu(self.conv2(x))
         # print(x.shape)
         x = F.relu(self.conv3(x))
-        print(f"image op pre flatten => {x.shape}")
-        x = self.flatten(x)
+        # print(f"image op pre flatten => {x.shape}")
+        x = self.flatten(x).unsqueeze(dim=1)
         # print(f"image op => {x.shape}")
         return x
 
@@ -41,20 +41,20 @@ class ImageModel(nn.Module):
 class LanguageModel(nn.Module):
     def __init__(self) -> None:
         super().__init__()
-        self.embedding_dim = 512
+        self.embedding_dim = 8
         self.vocab_size = len(json.load(open(vocab_path))) + 1
         self.embedding = nn.Embedding(self.vocab_size, self.embedding_dim)
-        self.flatten = nn.Flatten()
+        self.flatten = nn.Flatten(start_dim=2)
         # self.conv = nn.Conv1d(self.vocab_size, 8, kernel_size=5, stride=2)
-        self.conv = nn.Conv2d(1, 4, kernel_size=7, stride=4)
+        self.conv = nn.Conv2d(1, 16, kernel_size=3, stride=1)
         self.lstm = nn.LSTM(self.embedding_dim, 128, 2, batch_first=True, dropout = 0.15)
+    
     def forward(self, x):
         # print(x.shape, self.vocab_size)
         x = self.embedding(x)
-        # print(x.shape)
         # x = F.relu(self.conv(x))
-        _, (x, _) = self.lstm(x)
-        print(f"nlp op pre flattening => {x.shape}")
+        # _, (x, _) = self.lstm(x)
+        # print(f"nlp op pre flattening => {x.shape}")
         x = self.flatten(x)
         # print(f"nlp op => {x.shape}")
         return x
@@ -65,12 +65,13 @@ class SimilarityNet(nn.Module):
         super().__init__()
         self.language_model = LanguageModel()
         self.image_model = ImageModel()
-        self.linear = nn.Linear(128, 96)
-        self.linear2 = nn.Linear(96, 32)
+        self.flatten = nn.Flatten()
+        self.linear = nn.Linear(128, 64)
+        self.linear2 = nn.Linear(64, 32)
         self.linear3 = nn.Linear(32, 1)
 
         # self.bilinear = nn.Bilinear(1296, 2032, 128)
-        self.bilinear = nn.Bilinear(1296, 256, 128)
+        self.bilinear = nn.Bilinear(1296, 32, 128)
         # is of the form (img, txt, output_)
 
     def forward(self, img, txt):
@@ -78,6 +79,8 @@ class SimilarityNet(nn.Module):
         img = self.image_model(img)
 
         cat = self.bilinear(img, txt)
+        # print(cat.shape)
+        cat = self.flatten(cat)
         # print(cat.shape)
         # cat = torch.cat((img, txt), dim=1)
         cat = F.relu(self.linear(cat))

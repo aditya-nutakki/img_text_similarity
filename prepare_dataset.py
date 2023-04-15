@@ -7,9 +7,10 @@ from torchvision import transforms
 from config import padding_length, img_size, batch_size
 import cv2
 from random import randint
+import numpy as np
 
 
-base = "/mnt/d/work/datasets/img_text"
+base = "/mnt/d/work/datasets/colors"
 text_path = os.path.join(base, "labels/")
 images_path = os.path.join(base, "images/")
 
@@ -36,9 +37,9 @@ class ImgTextDataset(Dataset):
         pair = self.img_text_pairs[index]
         text, img_path = pair[0], pair[1]
         
-        rand_idx = randint(0,1)
-        label_ = torch.Tensor([int(not rand_idx)])
-        text = text[rand_idx]
+        # rand_idx = randint(0,1)
+        label_ = torch.Tensor([1])
+        # text = text[rand_idx]
 
         img_path = self.images_path + img_path.split("/")[-1].replace(".txt", ".jpg")
         img = self.transforms(cv2.imread(img_path))
@@ -50,11 +51,21 @@ class ImgTextDataset(Dataset):
 dataset = ImgTextDataset(img_text_pairs=img_text_pairs)
 # train_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
-# def train()
-# for i in train_dataloader:
-#     text, img, label = i
-    
 
-# img, txt, label = dataset[0]
-# print(txt, label)
-# print(img.shape, txt.shape, label.shape)
+# dummy_sp = "./dummy/"
+# os.makedirs(dummy_sp, exist_ok=True)
+
+# while True:
+#     idx = int(input())
+#     img, txt, label = dataset[idx]
+#     img = img.detach().cpu().numpy()
+
+#     # converting (c, h, w) to (w, h, c)
+#     img = img.transpose((1,2,0))
+#     print(txt, label)
+#     print(img.shape, txt.shape, label.shape)
+#     label_ = str(txt)[9]
+#     save_path = os.path.join(dummy_sp, f"{idx}_{label_}") + ".jpg"
+#     # cv2.imwrite(save_path, img)
+#     print()
+#     # print(len(dataset))
