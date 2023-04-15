@@ -14,14 +14,14 @@ from torch.utils.data import DataLoader
 def train_model(model, criterion, optimizer, epochs, save_model=True):
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    # model.to(device)
+    model.to(device)
     print(f"[\] model initialized on {device}")
     print("[\] Training ...")
     for _ in range(epochs):
         train_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
         for step, (img, txt, y) in enumerate(train_dataloader):
             
-            # img, txt, y = img.to(device), txt.to(device), y.to(device)
+            img, txt, y = img.to(device), txt.to(device), y.to(device)
             # print(img.shape, txt.shape)
             optimizer.zero_grad()
             preds = model(img, txt)

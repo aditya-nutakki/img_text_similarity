@@ -45,7 +45,7 @@ class ImgTextDataset(Dataset):
 
         # returns text, image, label
         # return img, torch.Tensor(text).type(torch.LongTensor), torch.Tensor([1])
-        return img, torch.Tensor(text).type(torch.LongTensor).unsqueeze(dim=0), label_
+        return img, torch.Tensor(text).type(torch.LongTensor), label_
 
 dataset = ImgTextDataset(img_text_pairs=img_text_pairs)
 # train_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
