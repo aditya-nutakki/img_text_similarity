@@ -1,7 +1,8 @@
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
-from config import padding_length, img_size
+from config import padding_length, img_size, vocab_path
+import json
 
 class ImageModel(nn.Module):
     def __init__(self, input_shape = img_size):
@@ -38,19 +39,20 @@ class ImageModel(nn.Module):
 
 
 class LanguageModel(nn.Module):
-    def __init__(self, vocab_size) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.vocab_size = vocab_size
-        self.embedding = nn.Embedding(self.vocab_size, 296)
+        self.vocab_size = len(json.load(open(vocab_path))) + 1
+        self.embedding = nn.Embedding(self.vocab_size, 512)
         self.flatten = nn.Flatten()
         # self.conv = nn.Conv1d(self.vocab_size, 8, kernel_size=5, stride=2)
         self.conv = nn.Conv2d(1, 4, kernel_size=7, stride=4)
-
+        self.lstm = nn.LSTM(512, 128, 2, True,0.15)
     def forward(self, x):
         # print(x.shape, self.vocab_size)
         x = self.embedding(x)
         # print(x.shape)
-        x = F.relu(self.conv(x))
+        # x = F.relu(self.conv(x))
+        _, (x, _) = self.lstm(x)
         # print(x.shape)
         x = self.flatten(x)
         # print(f"nlp op => {x.shape}")
@@ -60,7 +62,7 @@ class LanguageModel(nn.Module):
 class SimilarityNet(nn.Module):
     def __init__(self) -> None:
         super().__init__()
-        self.language_model = LanguageModel(vocab_size=142)
+        self.language_model = LanguageModel()
         self.image_model = ImageModel()
         self.linear = nn.Linear(128, 96)
         self.linear2 = nn.Linear(96, 32)

@@ -46,7 +46,7 @@ def preprocess_input(img_path, txt):
 
 
 img_path = "/mnt/d/work/datasets/img_text/117.jpg"
-txt = "buildings buildings buildings buildings buildings buildings"
+txt = "railway"
 img, txt = preprocess_input(img_path, txt)
 
 
