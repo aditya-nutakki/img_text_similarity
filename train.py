@@ -10,26 +10,28 @@ from torch.utils.data import DataLoader
 # train_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 # print(train_dataloader.dataset.vocab_size)
 
+# torch.Size([2, 3, 256, 256]) torch.Size([2, 24]) torch.Size([2, 1])
 
 def train_model(model, criterion, optimizer, epochs, save_model=True):
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    # model.to(device)
+    model.to(device)
     print(f"[\] model initialized on {device}")
     print("[\] Training ...")
     for _ in range(epochs):
         train_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
         for step, (img, txt, y) in enumerate(train_dataloader):
             
-            # img, txt, y = img.to(device), txt.to(device), y.to(device)
-            # print(img.shape, txt.shape)
+            img, txt, y = img.to(device), txt.to(device), y.to(device)
+            # print(img.shape, txt.shape, y.shape)
             optimizer.zero_grad()
             preds = model(img, txt)
             # print(preds, preds.shape)
             # print(y, y.shape)
-            print(preds, y)
+            print(f"preds => {preds}")
+            print(f"ground truth => {y}")
             loss = criterion(preds, y)
-
+            print(loss)
             loss.backward()
             optimizer.step()
             print(f"epoch => {_}; loss => {loss}; step => {step}")
@@ -41,7 +43,7 @@ def train_model(model, criterion, optimizer, epochs, save_model=True):
         print("Saved Model !")
 
 if __name__ == "__main__":
-    epochs = 2
+    epochs = 7
     model = SimilarityNet()
     criterion = nn.BCELoss() # output, target is the form of parameters
     # criterion = nn.TripletMarginLoss(margin=1.0, p=2)

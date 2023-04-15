@@ -9,7 +9,8 @@ import cv2
 from random import randint
 
 
-base = "/mnt/d/work/datasets/img_text"
+# base = "/mnt/d/work/datasets/img_text"
+base = "/opt/infilect/aditya/datasets/img_text"
 text_path = os.path.join(base, "labels/")
 images_path = os.path.join(base, "images/")
 
@@ -45,7 +46,7 @@ class ImgTextDataset(Dataset):
 
         # returns text, image, label
         # return img, torch.Tensor(text).type(torch.LongTensor), torch.Tensor([1])
-        return img, torch.Tensor(text).type(torch.LongTensor).unsqueeze(dim=0), label_
+        return img, torch.Tensor(text).type(torch.LongTensor), label_
 
 dataset = ImgTextDataset(img_text_pairs=img_text_pairs)
 # train_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
