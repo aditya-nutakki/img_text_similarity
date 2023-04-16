@@ -36,10 +36,24 @@ class ImgTextDataset(Dataset):
         # return tensor types for both text input and image
         pair = self.img_text_pairs[index]
         text, img_path = pair[0], pair[1]
+        # print(f"raw text => {text} is of type {type(text)}")
+        # make a random guess whether to give label pos or neg; if neg generate a different label than what it is 
+        gt_label = text[0][0]
+
+        rand_label = randint(0,1)
+        # label_ = torch.Tensor([1])
+        if rand_label:
+            # label_ = torch.Tensor([1])
+            label_ = torch.Tensor([0])
+        else:
+            gen_label = randint(1,6)
+            while gen_label == gt_label:
+                gen_label = randint(1,6)
+
+            text = [[gen_label, 0, 0, 0]]
+            # label_ = torch.Tensor([0])
+            label_ = torch.Tensor([1])
         
-        # rand_idx = randint(0,1)
-        label_ = torch.Tensor([1])
-        # text = text[rand_idx]
 
         img_path = self.images_path + img_path.split("/")[-1].replace(".txt", ".jpg")
         img = self.transforms(cv2.imread(img_path))
@@ -49,23 +63,26 @@ class ImgTextDataset(Dataset):
         return img, torch.Tensor(text).type(torch.LongTensor), label_
 
 dataset = ImgTextDataset(img_text_pairs=img_text_pairs)
+# print(dataset[1])
 # train_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
 
-# dummy_sp = "./dummy/"
-# os.makedirs(dummy_sp, exist_ok=True)
+if __name__ == "__main__":
+    dummy_sp = "./dummy/"
+    os.makedirs(dummy_sp, exist_ok=True)
 
-# while True:
-#     idx = int(input())
-#     img, txt, label = dataset[idx]
-#     img = img.detach().cpu().numpy()
-
-#     # converting (c, h, w) to (w, h, c)
-#     img = img.transpose((1,2,0))
-#     print(txt, label)
-#     print(img.shape, txt.shape, label.shape)
-#     label_ = str(txt)[9]
-#     save_path = os.path.join(dummy_sp, f"{idx}_{label_}") + ".jpg"
-#     # cv2.imwrite(save_path, img)
-#     print()
-#     # print(len(dataset))
+    while True:
+        idx = int(input())
+        img, txt, label = dataset[idx]
+        img = img.detach().cpu().numpy()
+        txt = txt.detach().cpu().numpy()
+        label = label.detach().cpu().numpy()
+        # converting (c, h, w) to (w, h, c)
+        img = img.transpose((1,2,0))
+        print(txt, label)
+        print(img.shape, txt.shape, label.shape)
+        label_ = str(txt)[9]
+        save_path = os.path.join(dummy_sp, f"{idx}_{txt[0][0]}_{int(label[0])}") + ".jpg"
+        cv2.imwrite(save_path, img*255)
+        print()
+        # print(len(dataset))

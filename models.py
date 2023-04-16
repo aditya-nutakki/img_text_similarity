@@ -18,6 +18,7 @@ class ImageModel(nn.Module):
         self.batchnorm2 = nn.BatchNorm2d(128)
 
         self.flatten = nn.Flatten(start_dim=1)
+        self.linear = nn.Linear(1296, 32)
     
     def forward(self, x):
         # print(x.shape)
@@ -33,7 +34,8 @@ class ImageModel(nn.Module):
         # print(x.shape)
         x = F.relu(self.conv3(x))
         # print(f"image op pre flatten => {x.shape}")
-        x = self.flatten(x).unsqueeze(dim=1)
+        x = self.flatten(x)
+        x = self.linear(x)
         # print(f"image op => {x.shape}")
         return x
 
@@ -44,11 +46,11 @@ class LanguageModel(nn.Module):
         self.embedding_dim = 8
         self.vocab_size = len(json.load(open(vocab_path))) + 1
         self.embedding = nn.Embedding(self.vocab_size, self.embedding_dim)
-        self.flatten = nn.Flatten(start_dim=2)
+        self.flatten = nn.Flatten(start_dim=1)
         # self.conv = nn.Conv1d(self.vocab_size, 8, kernel_size=5, stride=2)
         self.conv = nn.Conv2d(1, 16, kernel_size=3, stride=1)
         self.lstm = nn.LSTM(self.embedding_dim, 128, 2, batch_first=True, dropout = 0.15)
-    
+
     def forward(self, x):
         # print(x.shape, self.vocab_size)
         x = self.embedding(x)
@@ -77,15 +79,29 @@ class SimilarityNet(nn.Module):
     def forward(self, img, txt):
         txt = self.language_model(txt)
         img = self.image_model(img)
-
-        cat = self.bilinear(img, txt)
-        # print(cat.shape)
-        cat = self.flatten(cat)
-        # print(cat.shape)
-        # cat = torch.cat((img, txt), dim=1)
-        cat = F.relu(self.linear(cat))
-        cat = F.relu(self.linear2(cat))
-        cat = F.sigmoid(self.linear3(cat))
-        return cat
+        
+        return img, txt
+        # cat = self.bilinear(img, txt)
+        # # print(cat.shape)
+        # cat = self.flatten(cat)
+        # # print(cat.shape)
+        # # cat = torch.cat((img, txt), dim=1)
+        # cat = F.relu(self.linear(cat))
+        # cat = F.relu(self.linear2(cat))
+        # cat = F.sigmoid(self.linear3(cat))
+        # return cat
 
     
+class ContrastiveLoss(torch.nn.Module):
+    def __init__(self, margin=2.0):
+        super(ContrastiveLoss, self).__init__()
+        self.margin = margin
+
+    def forward(self, output1, output2, label):
+      # Calculate the euclidian distance and calculate the contrastive loss
+        euclidean_distance = F.pairwise_distance(output1, output2, keepdim = True)
+        print(euclidean_distance)
+        loss_contrastive = torch.mean((1-label) * torch.pow(euclidean_distance, 2) +
+                                    (label) * torch.pow(torch.clamp(self.margin - euclidean_distance, min=0.0), 2))
+
+        return loss_contrastive

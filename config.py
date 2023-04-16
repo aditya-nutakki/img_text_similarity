@@ -6,4 +6,4 @@ padding_length = 4
 model_path = "./models/dummy_v2.pt"
 vocab_path = "./vocab.json"
 
-batch_size = 2
+batch_size = 1
