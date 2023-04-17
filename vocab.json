@@ -1,1 +1,10 @@
-{"red": 1, "yellow": 2, "blue": 3, "green": 4, "purple": 5, "black": 6, "unk": 7}
+{
+    "red": 1,
+    "yellow": 2,
+    "blue": 3,
+    "green": 4,
+    "purple": 5,
+    "black": 6,
+    "white": 7,
+    "unk": 8
+}

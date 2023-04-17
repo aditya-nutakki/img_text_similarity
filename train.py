@@ -62,7 +62,7 @@ def train_model(model, criterion, optimizer, epochs, save_model=True):
             # print(y, y.shape)
             # print(preds, y)
             loss = criterion(img_, txt_, y)
-
+            print(y)
             loss.backward()
             optimizer.step()
             

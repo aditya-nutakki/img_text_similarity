@@ -8,7 +8,7 @@ import torch.nn.functional as F
 import cv2
 import sys
 import time
-
+from config import vocab_path, padding_length
 
 class ContrastiveLoss(torch.nn.Module):
     def __init__(self, margin=2.0):
@@ -18,7 +18,7 @@ class ContrastiveLoss(torch.nn.Module):
     def forward(self, output1, output2, label):
       # Calculate the euclidian distance and calculate the contrastive loss
         euclidean_distance = F.pairwise_distance(output1, output2, keepdim = True)
-        print(f"similarity score => {euclidean_distance}")
+        print(f"similarity scores => {euclidean_distance}")
         loss_contrastive = torch.mean((1-label) * torch.pow(euclidean_distance, 2) +
                                     (label) * torch.pow(torch.clamp(self.margin - euclidean_distance, min=0.0), 2))
 
@@ -31,31 +31,39 @@ class SiameseNet(nn.Module):
         self.dataset_path = dataset_path
         self.nc = len(os.listdir(dataset_path))
         
-        self.conv = nn.Sequential(
+        # input image res = (3, 72, 72)
+        self.img_net = nn.Sequential(
             nn.Conv2d(3, 16, 5, stride=2),
             nn.ReLU(),
             nn.Conv2d(16, 3, 5, stride=4),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(192, 32),
+            nn.ReLU(),
+            nn.Linear(32, 8),
+            nn.ReLU()
+        )
+        self.linear_img = nn.Linear(192, 32)
+        self.linear_img2 = nn.Linear(32, 8)
+        
+
+
+        self.vocab_size = len(json.load(open(vocab_path))) + 1
+        self.embedding_dim = 8
+        self.nlp_net = nn.Sequential(
+            nn.Embedding(self.vocab_size, self.embedding_dim),
+            nn.Flatten(),
+            nn.Linear(32,8),
             nn.ReLU()
         )
         self.flatten = nn.Flatten()
-        self.linear = nn.Linear(2883, self.nc)
-
-    def forward_once(self, x):
-        x = self.conv(x)
-        # print(x.shape)
-        x = self.flatten(x)
-        # print(x.shape)
-        x = F.relu(self.linear(x))
-        # print(x, x.shape)
-        return x
-
-    def forward(self, img1, img2):
-        return self.forward_once(img1), self.forward_once(img2)
-
+    
+    def forward(self, img, txt):
+        return self.img_net(img), self.nlp_net(txt)
 
 # ------------------------------------
 class SiameseDataset(Dataset):
-    def __init__(self, img_size = 256, dataset_path = "/mnt/d/work/datasets/colors/classes"):
+    def __init__(self, img_size = 72, dataset_path = "/mnt/d/work/datasets/colors/classes"):
         super().__init__()
         self.img_size = img_size
         self.transforms = transforms.Compose(
@@ -65,7 +73,9 @@ class SiameseDataset(Dataset):
         self.dataset_path = dataset_path
         self.nc = len(os.listdir(dataset_path))
         self.all_imgs, self.img_count = self.get_dataset_info(self.dataset_path)
-    
+        self.vocab = json.load(open(vocab_path))
+
+
     def get_dataset_info(self, dataset_path):
         imgs = []
         classes = os.listdir(dataset_path)
@@ -84,20 +94,20 @@ class SiameseDataset(Dataset):
         # pos_pair, neg_pair = [], []
 
         if img1_class == img2_class:
-            pos_pair = [img1_path, img2_path, 0]
+            pos_pair = [img1_path, img2_class, 0]
             while img1_class == img2_class:
                 img2_path = choice(self.all_imgs)
                 img2_class = img2_path.split("/")[-2]
 
-            neg_pair = [img1_path, img2_path, 1]
+            neg_pair = [img1_path, img2_class, 1]
 
         elif img1_class != img2_class:
-            neg_pair = [img1_path, img2_path, 1]
+            neg_pair = [img1_path, img2_class, 1]
             while img1_class != img2_class:
                 img2_path = choice(self.all_imgs)
                 img2_class = img2_path.split("/")[-2]
 
-            pos_pair = [img1_path, img2_path, 0]
+            pos_pair = [img1_path, img2_class, 0]
 
         return pos_pair, neg_pair
             
@@ -113,11 +123,13 @@ class SiameseDataset(Dataset):
         else:
             pair = neg_pair
         
-        img1_path, img2_path, label = pair
+        img_path, txt, label = pair
         # print(img1_path, img2_path, label)
         label = torch.Tensor([label])
-        img1, img2 = self.transforms(cv2.imread(img1_path)), self.transforms(cv2.imread(img2_path))
-        return img1, img2, label.unsqueeze(dim=0)
+        img = cv2.imread(img_path)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img, txt = self.transforms(img), torch.Tensor([self.vocab[txt], 0, 0, 0]).type(torch.LongTensor)
+        return img, txt, label.unsqueeze(dim=0)
 
 
 # model = SiameseNet()
@@ -132,22 +144,27 @@ def load_model(model_path):
     return model
 
 
-ds = SiameseDataset()
-# img1, img2, label = ds[12]
-dataloader = DataLoader(ds, batch_size=4, shuffle=False)
+# ds = SiameseDataset()
+# # img1, img2, label = ds[12]
+# dataloader = DataLoader(ds, batch_size=4, shuffle=True)
 
 
 def train(model, criterion, opt, epochs, save_model=True):
-    # ds = SiameseDataset()
-    # # # img1, img2, label = ds[12]
-    # dataloader = DataLoader(ds, batch_size=4, shuffle=True)
+    ds = SiameseDataset()
+    # img, txt, label = ds[4]
+    # print(img, txt, label)
+    # print(img.shape, txt.shape, label.shape)
+    dataloader = DataLoader(ds, batch_size=4, shuffle=True)
 
     for ep in range(epochs):
-        for step, (img1, img2, label) in enumerate(dataloader):
+        for step, (img, txt, label) in enumerate(dataloader):
             opt.zero_grad()
-            _img1, _img2 = model(img1, img2)
-            loss = criterion(_img1, _img2, label)
-            print(label, label.shape)
+            # print(img.shape, txt.shape, label.shape)
+            _img, _txt = model(img, txt)
+            # print(_img.shape, _txt.shape, label.shape)
+            loss = criterion(_img, _txt, label)
+            print(label)
+            print()
             loss.backward()
             opt.step()
 
@@ -159,9 +176,6 @@ def train(model, criterion, opt, epochs, save_model=True):
         os.makedirs("./models", exist_ok=True)
         torch.save(model.state_dict(), "./models/color_siamese2.pt")
         print("model saved !")
-
-
-
 
 if __name__ == "__main__":
     mode = sys.argv[1]
@@ -195,37 +209,15 @@ if __name__ == "__main__":
             ftime = time.time()
             print(f"Similarity Score => {score}; inference done in {ftime-stime}")
 
-
-    elif mode == "eval":
-        print("[/] Evaluating model ...")
-
-        model = load_model("./models/color_siamese.pt")
-        model.eval()
-        thrs = [0.1, 0.4, 0.5, 0.65]
-        with torch.no_grad():
-            for thr in thrs:
-                correct = 0
-                for step, (img1, img2, label) in enumerate(dataloader):
-                    _img1, _img2 = model(img1, img2)
-                    score = F.pairwise_distance(_img1, _img2, keepdim=True)
-                    # print(score, score.shape, label, label.shape)
-                    # score is of shape (-1, 1) and label is of shape (-1, 1, 1)
-                    score, label = score.reshape((-1)), label.reshape((-1))
-                    # print(score, score.shape, label, label.shape)
-
-                    for _score, _gt in zip(score, label):
-                        pred = 0.0 if _score <= thr else 1.0
-                        # print(_score, pred, _gt)
-                        if pred == _gt:
-                            correct += 1
-                
-                print(f"Acc at {thr} => {correct/len(ds)}")
-
-
     else:
-        # testing mode
-        pass
-
-
+        # mode for testing
+        model = SiameseNet()
+        # batched 4d input for images, batched 2d input for txt
+        x = torch.randn(1, 3, 72, 72)
+        y = torch.Tensor([[4,0,0,0]]).type(torch.LongTensor)
+        print(y.shape)
+        x, y = model(x, y)
+        print(x.shape, y.shape)
+        print(x, y)
 
 
